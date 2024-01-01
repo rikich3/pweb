@@ -87,13 +87,6 @@ sub advance{
     }
     return $sofar;
 }
-
-my $cgi = CGI->new;
-my $expr = $cgi->param('expr');
-
-my $solved = advance(join('', $expr =~ /[\d+\-\/\*\(\)]/g)); #regex that filters out any character that is not a number or operators
-print $cgi->header('text/html');
-
 sub untilClosure {
     my ($input_string, $n) = @_;
 
@@ -111,3 +104,36 @@ sub untilClosure {
 
     return $substring;
 }
+
+
+my $cgi = CGI->new;
+my $expr = $cgi->param('expr');
+
+my $solved = advance(join('', $expr =~ /[\d+\-\/\*\(\)]/g)); #regex that filters out any character that is not a number or operators
+print $cgi->header('text/html');
+print<<BLOCK;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="calculator">
+    <div id="sectionTitle">Calculadora Aritmetica</div>
+    <div>
+        <form action="cgi-bin/solveOperation.cgi" method="get">
+        <input type="text" id="inputField" placeholder="Enter expression">
+        <button type="submit" class="search-button">Buscar</button>
+        </form>
+    </div>
+    <div id="result">Result: ${solved}</div>
+    <div id="textSection">
+        Esta calculadora va a descartar todos los caracteres que no sean un digito, un signo aritmetico o parentesis.
+    </div>
+</div>
+</body>
+</html>
+BLOCK
