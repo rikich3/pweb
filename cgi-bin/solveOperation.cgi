@@ -1,10 +1,10 @@
 #!/usr/bin/perl
-use strinct;
+use strict;
 use warnings;
 use CGI;
 
 sub advance{
-    my $target = @_; #expresion to calculate
+    my ($target) = @_; #expresion to calculate
     my $span = length($target);
     my $innerExp; #substring only moving forwards
     my $sofar = 1;
@@ -19,6 +19,7 @@ sub advance{
         my $innerTar = substr($target, $index);
         my $innerSpan;
         if($nextChar eq '+' || $nextChar eq '-'){
+
             if($signSafe){
                 if ($innerTar =~ /([+-]+)/) {
                     my $substring = $1;
@@ -33,11 +34,15 @@ sub advance{
                 $signSafe = 0;
                 $index++;
             }
-            else if($nextChar eq '+'){return $sofar + advance(substring($innerTar, 1));}
-            else {return $sofar - advance(substring($innerTar, 1));}
+            elsif($nextChar eq '+'){return $sofar + advance(substr($innerTar, 1));}
+            else {return $sofar - advance(substr($innerTar, 1));}
         }
-        else if($nextChar =~ /^[0-9]$/){
-            my $numberStr = $1;
+
+        elsif($nextChar =~ /^[0-9]$/){ #si es un numero
+        my $numberStr;
+            if ($innerTar =~ /(\d+)/) {
+                $numberStr = $1;
+            }
             $index = $index + length($numberStr);
             my $number = int($numberStr);
             if($nextInv){$sofar = $sofar / $number;}
@@ -45,22 +50,22 @@ sub advance{
             $signSafe = 0;
             $nextInv = 0;
         }
-        else if($nextChar eq '*'){$index++;}
-        else if($nextChar eq "/"){
+        elsif($nextChar eq '*'){$index++;}
+        elsif($nextChar eq "/"){
             $nextInv = 1;
             $index++;
         }
-        else if($nextChar eq '('){
+        elsif($nextChar eq '('){
             if ($innerTar =~ /\((.*?)\)/) {
                 my $newExp = $1;
                 $index = $index + length($newExp) + 2;
                 $innerTar = substr($target, $index); #check if correct later
-                $count = 0;
+                my $count = 0;
                 for my $char (split //, $newExp) {
                     if($char eq '('){$count++;} #buscamos cuantos parentesis anidados hay
                 }
                 if($count>0) {
-                    my $closed = 0
+                    my $closed = 0;
                     for my $char (split //, $innerTar) {
                         if($char eq ')'){$closed++;} #contando los cerrados en el resto para ver si hacen pares
                     }
@@ -70,14 +75,14 @@ sub advance{
                         else{return $sofar * advance($innerTar);}
                     }
                     my $expComplement = untilClosure($innerTar, $count - $closed);
-                    if($nextInv)$sofar = $sofar / advance($newExp.$expComplement);
+                    if($nextInv) {$sofar = $sofar / advance($newExp.$expComplement);}
                     else {$sofar = $sofar * advance($newExp.$expComplement);}
                     $index = $index + length($expComplement);
                 }
-                else if($nextInv){$sofar = $sofar / $newExp;}
+                elsif($nextInv){$sofar = $sofar / $newExp;}
                 else {$sofar = $sofar * $newExp;}
             }
-            else if($nextInv){return $sofar / advance(substr($innerTar, 1));}
+            elsif($nextInv){return $sofar / advance(substr($innerTar, 1));}
             else {return $sofar * advance(substr($innerTar, 1));}
             $nextInv = 0;
         }
@@ -87,6 +92,7 @@ sub advance{
     }
     return $sofar;
 }
+
 sub untilClosure {
     my ($input_string, $n) = @_;
 
@@ -108,8 +114,9 @@ sub untilClosure {
 
 my $cgi = CGI->new;
 my $expr = $cgi->param('expr');
-
-my $solved = advance(join('', $expr =~ /[\d+\-\/\*\(\)]/g)); #regex that filters out any character that is not a number or operators
+# $expr = "30-(10*2)"; #dont forget to comment this 1, in this case fails
+$expr =~ s/[^0-9+\-()*\/]//g;
+my $solved = advance($expr); #regex that filters out any character that is not a number or operators
 print $cgi->header('text/html');
 print<<BLOCK;
 <!DOCTYPE html>
